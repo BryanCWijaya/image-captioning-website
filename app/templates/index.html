@@ -37,12 +37,16 @@
 </style>
 <div class="h-100 bg-dark text-white overflow-auto py-4">
     <h3 class="text-center mb-3">Upload History</h3>
-    <ul class="list-group">
+    <ul class="list-group" id="history-list">
         {% for history in histories %}
         {% if request.args.get('generation_id') == history.id|string %}
-        <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}" class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 active">{{ history.caption }}</a>
+        <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}"
+            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show active">{{
+            history.caption }}</a>
         {% else %}
-        <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}" class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4">{{ history.caption }}</a>
+        <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}"
+            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show">{{ history.caption
+            }}</a>
         {% endif %}
         {% endfor %}
         <!-- Add more list items for uploaded images -->
@@ -223,6 +227,32 @@
         }
     });
 </script>
+
+<style>
+    /* css for animating add new history */
+    ul a {
+        transition: all 0.5s ease-out;
+        opacity: 0;
+    }
+
+    ul a.show {
+        opacity: 1;
+    }
+</style>
+<script> // script for animating add new history to list (called in generating caption script)
+    function add_new_history(href) {
+        var list = document.getElementById('history-list');
+        var newList = document.createElement('a');
+        newList.href = href;
+        newList.classList.add("list-group-item", "list-group-item-action", "text-white", "text-nowrap", "text-truncate", "pl-4", "active")
+        list.insertBefore(newList, list.firstChild);
+        setTimeout(function () {
+            newList.classList.add("show");
+        }, 10);
+        return newList;
+    }
+</script>
+
 <script> // script for generating caption
     function showLoading() {
         document.getElementById("generateButton").style.display = "none";
@@ -260,19 +290,22 @@
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const params = Object.fromEntries(urlParams.entries());
-
-                if (!('generation_id' in params)) {             // if generation_id params not exist in url, add it
+                let newList = null;
+                if (!('generation_id' in params)) {                                        // if generation_id params not exist in url, add it
                     const params = {
                         generation_id: data["generation_id"],
                     };
-                    const searchParams = new URLSearchParams(params);     // this is the params that will be used by get tmethod
-                    // window.location.search = searchParams;
-                    history.pushState({}, null, location.href + "?" + searchParams);                // change address bar without refreshing page
+                    const searchParams = new URLSearchParams(params);                      // this is the params that will be used by get tmethod
+                    history.pushState({}, null, location.href + "?" + searchParams);       // change address bar without refreshing page
+                    newList = add_new_history(location.href + "?" + searchParams);
                 }
 
                 const predictedCaption = data["caption"];
                 for (let i = 0; i < predictedCaption.length; i++) {
                     resultLabel.innerHTML += predictedCaption.charAt(i);
+                    if (newList !== null) {
+                        newList.innerHTML += predictedCaption.charAt(i);
+                    }
                     await sleep(30);
                 }
             })
