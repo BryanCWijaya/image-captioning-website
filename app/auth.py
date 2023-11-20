@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from .models import User
+from .models import User, Statistics
 from flask_login import login_user, logout_user, login_required
 
 from . import db
@@ -51,8 +51,15 @@ def signup_post():
 
     # add the new user to the database
     db.session.add(new_user)
+    db.session.flush()
+    db.session.refresh(new_user)
+
+    new_stats = Statistics(user_id=new_user.id, image_uploaded=0, sentence_generated=0, character_generated=0)
+    db.session.add(new_stats)
+
     db.session.commit()
 
+    flash("Registration successful! Please log in.")
     return redirect(url_for('auth.login'))
 
 @auth.route('/logout')

@@ -36,20 +36,21 @@
     }
 </style>
 <div class="h-100 bg-dark text-white overflow-auto py-4">
-    <h3 class="text-center mb-3">Upload History</h3>
+    <h3 class="text-center mb-3 px-4">Upload History</h3>
     <ul class="list-group" id="history-list">
         {% for history in histories %}
         {% if request.args.get('generation_id') == history.id|string %}
         <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}"
-            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show active">{{
-            history.caption }}</a>
+            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show active">
+            {{ history.caption }}
+        </a>
         {% else %}
         <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}"
-            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show">{{ history.caption
-            }}</a>
+            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show">
+            {{ history.caption }}
+        </a>
         {% endif %}
         {% endfor %}
-        <!-- Add more list items for uploaded images -->
     </ul>
 </div>
 {% endblock %}
@@ -195,6 +196,8 @@
     const preview = document.querySelector("#preview");
     const img = document.querySelector("img");
     let regExp = /[0-9a-zA-Z\^\&\'\@\{\}\[\]\,\$\=\!\-\#\(\)\.\%\+\~\_ ]+$/;
+    let isImageChanged = false;                 // variable to mark if image changed (if so, make new generation; else, edit current generation)
+
     function defaultBtnActive() {
         defaultBtn.click();
     }
@@ -221,6 +224,8 @@
             img.src = "";
             wrapper.classList.remove("active")
         }
+        isImageChanged = true;
+
         if (this.value) {
             let valueStore = this.value.match(regExp);
             fileName.textContent = valueStore;
@@ -268,17 +273,26 @@
         const imageFile = document.getElementById("default-btn");
         const resultLabel = document.getElementById("resultLabel");
 
-        if (!imageFile.files[0]) {
-            alert("Please select an image.");
-            return;
-        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const params = Object.fromEntries(urlParams.entries());
 
         resultLabel.textContent = "";
         showLoading();
 
         const formData = new FormData();
-        formData.append("image", imageFile.files[0]);
         formData.append("captioner", captioner);
+        
+        if (isImageChanged && imageFile.files[0]) {                                     // if image changed and file not blank, make new generation
+            formData.append("edit", "false");
+            formData.append("image", imageFile.files[0]);
+        } else if (!isImageChanged && "{{image_path != ''}}" == "True") {                // if image not changed and image_path not blank, edit caption in current generation_id
+            formData.append("edit", params["generation_id"]);
+            formData.append("image", "{{image_path}}")
+        } else {
+            alert("Please select an image.");
+            hideLoading();
+            return;
+        }
 
         fetch("/generate_caption", {
             method: "POST",
@@ -288,32 +302,29 @@
             .then(async data => {
                 hideLoading();
 
-                const urlParams = new URLSearchParams(window.location.search);
-                const params = Object.fromEntries(urlParams.entries());
-                let newList = null;
-                if (!('generation_id' in params)) {                                        // if generation_id params not exist in url, add it
-                    const params = {
-                        generation_id: data["generation_id"],
-                    };
-                    const searchParams = new URLSearchParams(params);                      // this is the params that will be used by get tmethod
-                    history.pushState({}, null, location.href + "?" + searchParams);       // change address bar without refreshing page
-                    newList = add_new_history(location.href + "?" + searchParams);
-                }
+                const params = {
+                    generation_id: data["generation_id"],
+                };
+                const searchParams = new URLSearchParams(params);                      // this is the params that will be used by get tmethod
+                const href = "{{ url_for('main.index') }}" + "?" + searchParams
+                history.pushState({}, null, href);                                     // change address bar without refreshing page
 
+                let curList = null;
+                if (isImageChanged) {
+                    document.getElementsByClassName('active')[0].classList.remove("active");
+                    curList = add_new_history(href);
+                } else {
+                    curList = document.querySelectorAll(`a[href='${href}']`)[0];
+                    curList.innerHTML = "";
+                }
                 const predictedCaption = data["caption"];
                 for (let i = 0; i < predictedCaption.length; i++) {
                     resultLabel.innerHTML += predictedCaption.charAt(i);
-                    if (newList !== null) {
-                        newList.innerHTML += predictedCaption.charAt(i);
-                    }
+                    curList.innerHTML += predictedCaption.charAt(i);
                     await sleep(30);
                 }
+                isImageChanged = false;                                                // set flag back to false, so that if user generate caption without changing image, it will not make new generation
             })
-            .catch(error => {
-                hideLoading();
-                console.error("Error:", error);
-                resultLabel.textContent = "Error: Something went wrong";
-            });
     }
 </script>
 {% endblock %}

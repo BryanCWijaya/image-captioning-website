@@ -9,6 +9,6 @@ captioners = {
 }
 
 def generate_caption(image, model):
-    image = Image.open(image.stream)    # convert flask image to PIL image
+    image = Image.open(image)
     captioner = captioners[model]
     return captioner(image)[0]['generated_text']

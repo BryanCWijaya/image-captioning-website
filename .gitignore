@@ -81,4 +81,4 @@ venv.bak/
 # Additional
 models/*
 images/*
-.sqlite
+db.sqlite

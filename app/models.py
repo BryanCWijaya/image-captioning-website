@@ -13,3 +13,10 @@ class PredictHistory(db.Model):
     image_file = db.Column(db.String(100), nullable=False, unique=True)
     caption = db.Column(db.String(100), nullable=False)
     generated_date = db.Column(db.DateTime, nullable=False)
+
+class Statistics(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    image_uploaded = db.Column(db.Integer, nullable=False)
+    sentence_generated = db.Column(db.Integer, nullable=False)
+    character_generated = db.Column(db.Integer, nullable=False)

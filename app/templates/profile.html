@@ -1,8 +1,74 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
 <div class="container mt-4">
-    <h1 class="text-center">Caption Generation History</h1>
+    <h1 class="text-center mb-3">User Activity Statistics</h1>
+
+    <div class="row justify-content-center">
+        <div class="col-xl-3 col-sm-6 col-12 mb-4">
+            <div class="card bg-gradient" style="background-color: rgb(222, 222, 222);">
+                <div class="card-content">
+                    <div class="card-body">
+                        <div class="media d-flex">
+                            <div class="align-self-center">
+                                <span class="material-symbols-outlined" style="font-size: 50px;">
+                                    photo_library
+                                </span>
+                            </div>
+                            <div class="media-body text-right">
+                                <h3>{{ statistics.image_uploaded }}</h3>
+                                <span>Image Uploaded</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 col-12 mb-4">
+            <div class="card bg-gradient" style="background-color: rgb(222, 222, 222);">
+                <div class="card-content">
+                    <div class="card-body">
+                        <div class="media d-flex">
+                            <div class="align-self-center">
+                                <span class="material-symbols-outlined" style="font-size: 50px;">
+                                    subtitles
+                                </span>
+                            </div>
+                            <div class="media-body text-right">
+                                <h3>{{ statistics.sentence_generated }}</h3>
+                                <span>Sentence Generated</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 col-12 mb-4">
+            <div class="card bg-gradient" style="background-color: rgb(222, 222, 222);">
+                <div class="card-content">
+                    <div class="card-body">
+                        <div class="media d-flex">
+                            <div class="align-self-center">
+                                <span class="material-symbols-outlined" style="font-size: 50px;">
+                                    format_size
+                                </span>
+                            </div>
+                            <div class="media-body text-right">
+                                <h3>{{ statistics.character_generated }}</h3>
+                                <span>Character Generated</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <h1 class="text-center mb-1 mt-3">Caption Generation History</h1>
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-info mt-3" role="alert">
@@ -11,17 +77,19 @@
     {% endif %}
     {% endwith %}
     <div class="mt-4">
-        <table class="table">
+        <table id="table" class="table">
             <thead>
                 <tr>
+                    <th>No.</th>
                     <th>Image Filename</th>
-                    <th>Caption</th>
                     <th>Generated Date</th>
+                    <th>Caption</th>
                 </tr>
             </thead>
             <tbody>
                 {% for history in histories %}
                 <tr>
+                    <td>{{ loop.index }}</td>
                     <td>{{ history.image_file }}</td>
                     <td>{{ history.generated_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td>{{ history.caption }}</td>
@@ -31,4 +99,42 @@
         </table>
     </div>
 </div>
+
+<!-- jQuery -->
+<script src='https://code.jquery.com/jquery-3.7.0.js'></script>
+<!-- Data Table JS -->
+<script src='https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js'></script>
+<script src='https://cdn.datatables.net/responsive/2.1.0/js/dataTables.responsive.min.js'></script>
+<script src='https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js'></script>
+<script>
+    $(document).ready(function () {
+        $('#table').DataTable({
+            language: {
+                //customize pagination prev and next buttons: use arrows instead of words
+                'paginate': {
+                    'previous': '<span class="fa fa-chevron-left"></span>',
+                    'next': '<span class="fa fa-chevron-right"></span>'
+                },
+                //customize number of elements to be displayed
+                "lengthMenu": 'Display <select class="form-control input-sm">' +
+                    '<option value="10">10</option>' +
+                    '<option value="20">20</option>' +
+                    '<option value="30">30</option>' +
+                    '<option value="40">40</option>' +
+                    '<option value="50">50</option>' +
+                    '<option value="-1">All</option>' +
+                    '</select> results'
+            }
+        })
+    });
+</script>
+<style>
+    .dataTables_length {
+        display: none;
+    }
+
+    .dataTables_filter {
+        float: right;
+    }
+</style>
 {% endblock %}

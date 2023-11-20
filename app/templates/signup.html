@@ -19,15 +19,14 @@
 </head>
 
 <body>
-    <section class="vh-100" style="background-color: #9A616D;">
-        <div class="container py-5 h-100">
-            <div class="row d-flexcjustify-content-center align-items-center h-100">
+    <section class="min-vh-100 bg-dark">
+        <div class="container py-5">
+            <div class="row d-flex justify-content-center align-items-center">
                 <div class="col col-xl-10">
                     <div class="card" style="border-radius: 1rem;">
                         <div class="row g-0">
                             <div class="col-md-6 col-lg-6 my-auto d-md-block px-5">
-                                <h1 class="fw-bold display-4" id="title"><span id="first"></span><br><s
-                                        id="second"></s><br><span id="third"></span></h1>
+                                <h1 class="fw-bold display-4" id="title"></h1>
                             </div>
                             <div class="col-md-6 col-lg-6 d-flex align-items-center text-center">
                                 <div class="card-body p-4 p-lg-5 text-black">
@@ -90,23 +89,31 @@
 
     <!-- For typing effect -->
     <script>
-        var i = 0;
-        var txt = 'A PICTURE |IS WORTH| SPEAKS A THOUSAND WORDS.'; /* The text */
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        var txts = ['A PICTURE SPEAKS A THOUSAND WORDS.',
+            'UNLOCK THE STORY BEHIND EVERY IMAGE.',
+            'LET YOUR IMAGES TELL THEIR TALE.',
+            'SEE BEYOND THE FRAME.',
+            'FROM PIXELS TO PROFOUND STORIES.',
+            'DISCOVER THE UNSEEN NARRATIVES.']; /* The text */
+        var txt_index = 0;
         var speed = 50; /* The speed/duration of the effect in milliseconds */
-        var id = 'first';
-        window.onload = function typeWriter() {
-            if (i < txt.length) {
-                if (txt.charAt(i) == '|') {
-                    if (id == "first") {
-                        id = "second";
-                    } else {
-                        id = "third";
-                    }
-                } else {
-                    document.getElementById(id).innerHTML += txt.charAt(i);
+        var i = 0;
+
+        window.onload = async function typeWriter() {
+            while (true) {
+                txt = txts[txt_index];
+                for (let i = 0; i < txt.length; i++) {
+                    document.getElementById("title").innerHTML += txt.charAt(i);
+                    await sleep(50);
                 }
-                i++;
-                setTimeout(typeWriter, speed);
+                await sleep(3000);
+                document.getElementById("title").innerHTML = "";
+                txt_index = (txt_index + 1) % txts.length
+
             }
         }
     </script>

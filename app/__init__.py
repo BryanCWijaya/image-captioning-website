@@ -21,7 +21,7 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    from .models import User, PredictHistory
+    from .models import User, PredictHistory, Statistics
     with app.app_context():
         db.create_all()
 
