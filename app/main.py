@@ -5,6 +5,7 @@ from datetime import datetime
 from .transformers import generate_caption
 from .models import PredictHistory, Statistics
 from werkzeug.utils import secure_filename
+import zipfile
 import os
 
 main = Blueprint('main', __name__)
@@ -49,8 +50,9 @@ def generate():
     edit_id = request.form["edit"]
     if edit_id == "false":                                 # make new generation
         image = request.files["image"]
-        extension = image.filename.split('.')[1]
-        filename = str(user_id) + "_" + datetime.now().strftime("%d_%m_%Y_%H_%M_%S") + "." + extension
+
+        last_primary_key = db.session.query(PredictHistory.id).order_by(PredictHistory.id.desc()).first()[0]
+        filename = str(last_primary_key + 1) + "_" + image.filename  # add one to get next PK
 
         caption = generate_caption(image.stream, model)        # use image.stream convert flask image to PIL image
 
@@ -81,3 +83,52 @@ def generate():
         db.session.commit()
         generation_id = int(edit_id)
     return jsonify({"generation_id": generation_id, "caption": caption})
+
+@main.route('/delete_history', methods=['POST'])
+@login_required
+def delete_history():
+    generation_id = int(request.form["generation_id"])
+    PredictHistory.query.filter_by(id=generation_id).delete()
+    db.session.commit()
+    return jsonify({"response": "success"})
+
+@main.route('/batch_generate')
+@login_required
+def batch_generate():
+    user_id = current_user.id
+    histories = PredictHistory.query.filter_by(user_id=user_id).order_by(PredictHistory.generated_date.desc())
+    return render_template('batch_generate.html', histories=histories)
+
+@main.route('/handle_batch', methods=['POST'])
+@login_required
+def handle_batch():
+    user_id = current_user.id
+    model = request.form["captioner"]
+    images = request.files["imagesFolder"]
+
+    file_like_object = images.stream._file  
+    with zipfile.ZipFile(file_like_object, "r") as f:
+        for idx, name in enumerate(f.namelist()):
+            image = f.open(name)
+            last_primary_key = db.session.query(PredictHistory.id).order_by(PredictHistory.id.desc()).first()[0]
+            filename = str(last_primary_key + 1) + "_" + name   # add one to get next PK
+
+            caption = generate_caption(image, model)
+
+            new_pred_hist = PredictHistory(user_id=user_id, image_file=filename, caption=caption, generated_date=datetime.now())
+            db.session.add(new_pred_hist)
+
+            statistics = Statistics.query.filter_by(user_id=user_id).first()
+            statistics.image_uploaded += 1
+            statistics.sentence_generated += 1
+            statistics.character_generated += len(caption)
+
+            f.extract(name, "images")       # saving file before commit and after add user to prevent file upload or db commit when error
+            os.rename(os.path.join("images", name), os.path.join("images", filename))
+            print(f"{idx + 1}/{len(f.namelist())} done")
+        db.session.commit()
+
+    flash("Images uploaded successfully")
+    return jsonify({"response": "success"})
+
+    

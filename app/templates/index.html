@@ -285,9 +285,12 @@
         if (isImageChanged && imageFile.files[0]) {                                     // if image changed and file not blank, make new generation
             formData.append("edit", "false");
             formData.append("image", imageFile.files[0]);
-        } else if (!isImageChanged && "{{image_path != ''}}" == "True") {                // if image not changed and image_path not blank, edit caption in current generation_id
+        } else if (!isImageChanged && "{{image_path != ''}}" == "True") {               // if image not changed and image_path not blank, edit caption in current generation_id
             formData.append("edit", params["generation_id"]);
             formData.append("image", "{{image_path}}")
+        } else if (!isImageChanged && imageFile.files[0]) {                             // if image not changed and file not blank, edit caption in current generation_id
+            formData.append("edit", params["generation_id"]);
+            formData.append("image", imageFile.files[0])
         } else {
             alert("Please select an image.");
             hideLoading();

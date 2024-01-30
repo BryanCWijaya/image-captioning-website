@@ -81,18 +81,26 @@
             <thead>
                 <tr>
                     <th>No.</th>
-                    <th>Image Filename</th>
+                    <th>Image</th>
                     <th>Generated Date</th>
                     <th>Caption</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for history in histories %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ history.image_file }}</td>
+                    <td><img id="preview" src="{{ url_for('main.load_image', filename=history.image_file) }}"
+                            style="height: 40px;"></td>
                     <td>{{ history.generated_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td>{{ history.caption }}</td>
+                    <td>
+                        <button type="button" class="btn open-dialog" data-toggle="modal"
+                            data-target="#exampleModalCenter" data-id="{{ history.id }}">
+                            <span class=" material-symbols-outlined">delete</span>
+                        </button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -100,8 +108,33 @@
     </div>
 </div>
 
-<!-- jQuery -->
-<script src='https://code.jquery.com/jquery-3.7.0.js'></script>
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Confirmation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure want to delete this history?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm">Delete</button>
+                <button class="btn btn-primary" id="confirmLoading"
+                    style="display: none;" disabled>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Loading...
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Data Table JS -->
 <script src='https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js'></script>
 <script src='https://cdn.datatables.net/responsive/2.1.0/js/dataTables.responsive.min.js'></script>
@@ -119,14 +152,30 @@
                 "lengthMenu": 'Display <select class="form-control input-sm">' +
                     '<option value="10">10</option>' +
                     '<option value="20">20</option>' +
-                    '<option value="30">30</option>' +
-                    '<option value="40">40</option>' +
                     '<option value="50">50</option>' +
                     '<option value="-1">All</option>' +
                     '</select> results'
             }
         })
     });
+</script>
+<script>
+    $(document).on("click", ".open-dialog", function () {
+        var generationId = $(this).data('id');
+        $(".modal-footer #confirm").off('click').click({ generationId: generationId }, deleteHistory);
+    });
+    function deleteHistory(event) {
+        $("#confirm").hide();
+        $("#confirmLoading").show();
+        const formData = new FormData();
+        formData.append("generation_id", event.data.generationId);
+        fetch("/delete_history", {
+            method: "POST",
+            body: formData
+        }).then(function (response) {
+            location.reload();
+        })
+    }
 </script>
 <style>
     .dataTables_length {

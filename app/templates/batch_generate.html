@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block sidebar %}
+<style>
+    .list-group-item {
+        background-color: #343a40;
+    }
+
+    .list-group-item:hover {
+        background-color: black;
+    }
+
+    .list-group-item.active {
+        background-color: rgb(82, 82, 82);
+    }
+
+    /* Modify scrollbar */
+    /* width */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    /* Track */
+    ::-webkit-scrollbar-track {
+        background: #343a40;
+    }
+
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+        background: #888;
+    }
+
+    /* Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+<div class="h-100 bg-dark text-white overflow-auto py-4">
+    <h3 class="text-center mb-3 px-4">Upload History</h3>
+    <ul class="list-group" id="history-list">
+        {% for history in histories %}
+        {% if request.args.get('generation_id') == history.id|string %}
+        <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}"
+            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show active">
+            {{ history.caption }}
+        </a>
+        {% else %}
+        <a href="{{ url_for('main.index') + '?generation_id=' + history.id|string }}"
+            class="list-group-item list-group-item-action text-white text-nowrap text-truncate pl-4 show">
+            {{ history.caption }}
+        </a>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+
+
+<div class="contrainer-fluid overflow-auto">
+
+    <div class="container text-center flex-grow-1 p-5">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-danger" role="alert">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+        <!-- Dropzone for Images Folder -->
+        <form class="form-group" id="form">
+            <label for="imagesFolder">Images Folder (ZIP or RAR of images</label>
+            <div id="images-dropzone" class="dropzone">
+                <div class="dz-message">Drop files here or click to upload</div>
+            </div>
+
+            <label for="captioner">Select Model:</label>
+            <select id="captioner" class="form-control">
+                <option value="vit-indobert">VIT + IndoBERT</option>
+                <option value="deit-indobert">DEIT + IndoBERT</option>
+                <option value="dinov2-indobert">DINO V2 + IndoBERT</option>
+                <option value="vit-gpt2">VIT + GPT-2 (English)</option>
+            </select>
+            <button class="btn btn-primary w-100 p-2 font-weight-bold mt-3" id="generateButton" disabled>Generate
+                Caption</button>
+            <button class="btn btn-primary w-100 p-2 font-weight-bold mt-3" id="generateLoading" style="display: none;"
+                disabled>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Loading...
+            </button>
+        </form>
+
+        <h3 id="resultLabel" class="mt-3">{{ caption }}</h3>
+    </div>
+</div>
+
+<script> // script for dropzone
+    function showLoading() {
+        document.getElementById("generateButton").style.display = "none";
+        document.getElementById("generateLoading").style.display = "inline";
+    }
+    function hideLoading() {
+        document.getElementById("generateButton").style.display = "inline";
+        document.getElementById("generateLoading").style.display = "none";
+    }
+
+    Dropzone.autoDiscover = false;
+    new Dropzone("#images-dropzone", {
+        url: "/handle_batch", // Replace with your server-side endpoint
+        paramName: "imagesFolder",
+        maxFiles: 1,
+        addRemoveLinks: true,
+        acceptedFiles: '.zip,.rar',
+        autoProcessQueue: false, // Prevent automatic upload
+        init: function () {
+            this.on("addedfile", function (file) {
+                document.getElementById("generateButton").disabled = false;
+            });
+            this.on("removedfile", function () {
+                document.getElementById("generateButton").disabled = true;
+            });
+            this.on("sending", function (file, xhr, formData) {
+                const modelName = document.getElementById("captioner").value;
+                formData.append("captioner", modelName); // Add model name
+            });
+            this.on("success", function (files) {
+                window.location = "{{ url_for('main.profile') }}";
+            });
+        }
+    });
+
+    const form = document.getElementById('form');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        showLoading();
+        const imagesDropzone = Dropzone.forElement("#images-dropzone");
+        imagesDropzone.processQueue();
+    });
+</script>
+{% endblock %}
